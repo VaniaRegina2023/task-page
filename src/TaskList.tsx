@@ -2,36 +2,23 @@
 import * as React from "react";
 import { Box, Flex, VStack, HStack, Checkbox, Text, Button, Input, IconButton } from "@chakra-ui/react";
 import { DeleteIcon, CheckIcon } from "@chakra-ui/icons";
-import axios from "axios";
 
 interface Task {
   id: number;
-  title: string;
+  text: string;
   completed: boolean;
+  deleted: boolean;
 }
 
+const initialTasks: Task[] = [
+  { id: 1, text: "Tarefa 1", completed: false, deleted: false },
+  { id: 2, text: "Tarefa 2", completed: false, deleted: false },
+  { id: 3, text: "Tarefa 3", completed: false, deleted: false },
+];
+
 const TaskList: React.FC = () => {
-  const [tasks, setTasks] = React.useState<Task[]>([]);
+  const [tasks, setTasks] = React.useState<Task[]>(initialTasks);
   const [newTaskText, setNewTaskText] = React.useState<string>("");
-
-  // Função para buscar as tarefas da API
-  const fetchTasks = async () => {
-    try {
-      const response = await axios.get('https://sua-api.com/tarefas'); // Substitua pela URL da sua API
-      const apiTasks = response.data.map((task: any) => ({
-        id: task.id,
-        title: task.title,
-        completed: task.completed,
-      }));
-      setTasks(apiTasks);
-    } catch (error) {
-      console.error("Erro ao buscar tarefas da API", error);
-    }
-  };
-
-  React.useEffect(() => {
-    fetchTasks();
-  }, []);
 
   const toggleTaskCompletion = (taskId: number) => {
     setTasks(tasks.map(task =>
@@ -39,9 +26,15 @@ const TaskList: React.FC = () => {
     ));
   };
 
+  const toggleTaskDelete = (taskId: number) => {
+    setTasks(tasks.map(task =>
+      task.id === taskId ? { ...task, deleted: !task.deleted } : task
+    ));
+  };
+
   const addTask = () => {
     if (newTaskText.trim() !== "") {
-      const newTask: Task = { id: tasks.length + 1, title: newTaskText, completed: false };
+      const newTask: Task = { id: tasks.length + 1, text: newTaskText, completed: false, deleted: false };
       setTasks([...tasks, newTask]);
       setNewTaskText("");
     }
@@ -73,9 +66,12 @@ const TaskList: React.FC = () => {
                 onChange={() => toggleTaskCompletion(task.id)}
               />
               <Text as={task.completed ? "del" : "span"}>
-                {task.title}
+                {task.text} {task.completed ? "Realizada" : "Pendente"}
+                {task.completed && <CheckIcon color="green.500" />}
               </Text>
-              {!task.completed && (
+              {task.completed ? (
+                <Checkbox isChecked readOnly />
+              ) : (
                 <IconButton
                   aria-label="Marcar como Realizada"
                   icon={<CheckIcon />}
@@ -83,12 +79,21 @@ const TaskList: React.FC = () => {
                   onClick={() => toggleTaskCompletion(task.id)}
                 />
               )}
-              <IconButton
-                aria-label="Remover"
-                icon={<DeleteIcon />}
-                colorScheme="red"
-                onClick={() => removeTask(task.id)}
-              />
+              {task.deleted ? (
+                <IconButton
+                  aria-label="Remover"
+                  icon={<DeleteIcon />}
+                  colorScheme="red"
+                  onClick={() => removeTask(task.id)}
+                />
+              ) : (
+                <IconButton
+                  aria-label="Marcar como excluída"
+                  icon={<DeleteIcon />}
+                  colorScheme="red"
+                  onClick={() => toggleTaskDelete(task.id)}
+                />
+              )}
             </HStack>
           ))}
         </VStack>
